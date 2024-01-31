@@ -11,6 +11,10 @@ reg_prefix = sys.argv[5]
 format_str = sys.argv[6]
 offset_adjust = int(sys.argv[7], 16)
 
+reg_text = None
+reg_offset = None
+reg_reset = None
+
 for pagei in range(page_end+1-page_start):
     page = reader.pages[page_start+pagei]
     page_text = page.extract_text()
@@ -22,12 +26,24 @@ for pagei in range(page_end+1-page_start):
         if tmp!=-1:
             reg_text = line[tmp:]
             print(reg_text)
-            print(page_lines[i+1])
-            line = page_lines[i+1]
+            #print(page_lines[i+1])
+            #line = page_lines[i+1]
+            reg_offset = None
+            reg_reset = None
+
+        tmp = -1
+        if reg_text is not None:
+            tmp = line.find("Offset")
+        if tmp!=-1:
+            line = line[tmp:]
             tmp = line.find("0x")
             if tmp!=-1:
                 tmpline = line[tmp:]
                 tmp = tmpline.find(" |")
+                if tmp==-1:
+                    tmp = tmpline.find(" │")
+                if tmp==-1:
+                    tmp = tmpline.find(" I")
                 if tmp!=-1:
                     reg_offset = tmpline[:tmp]
                     tmpline = tmpline[tmp:]
@@ -42,6 +58,7 @@ for pagei in range(page_end+1-page_start):
                             reg_text = reg_text.replace(" ", "")
                             reg_offset = reg_offset.replace(" ", "")
                             reg_reset = reg_reset.replace(" ", "")
+                            reg_reset = reg_reset.replace("X", "0")
 
                             print(reg_offset)
                             print(reg_reset)
@@ -54,4 +71,11 @@ for pagei in range(page_end+1-page_start):
                             out_text = out_text.replace("{RESET}", reg_reset)
                             out_text = out_text.replace("\\n", "\n")
                             outf.write(out_text)
+
+    if reg_text is None or reg_offset is None or reg_reset is None:
+        print(page_lines)
+    else:
+        reg_text = None
+        reg_offset = None
+        reg_reset = None
 
